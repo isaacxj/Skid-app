@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1034299480827",
+    "project_id": "skid-app-499",
+    "storage_bucket": "skid-app-499.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034299480827:android:ebaa1249fcb1dab7606e5e",
+        "android_client_info": {
+          "package_name": "com.example.skid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1034299480827-9rmb347v8oenmj1rpm7p8oimpgtd4dqa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4UA33To-V66Gq87LFjImEAa1YrbhiosM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1034299480827-9rmb347v8oenmj1rpm7p8oimpgtd4dqa.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
