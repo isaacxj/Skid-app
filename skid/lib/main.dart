@@ -8,17 +8,17 @@ import 'package:skid/screens/signup_screen.dart';
 
 // void main() {
 //  WidgetsFlutterBinding.ensureInitialized();
-//   await Firebase.initializeApp(
+//  Firebase.initializeApp(
 //     options: DefaultFirebaseOptions.currentPlatform,
-//   );
-//   runApp(const MyApp());
+// );
+//   runApp( MyApp());
 // }
-
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp().catchError((error) {
+    print('Error initializing Firebase: $error');
+  });
   runApp(MyApp());
 }
 
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Your App Name',
+      title: 'SKID App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -52,3 +52,5 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+
