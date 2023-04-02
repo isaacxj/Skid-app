@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:skid/screens/map_view_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -46,6 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton(
               onPressed: () {
                 // Implement navigation to the map screen
+                Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MapViewScreen()),
+);
+
               },
               child: Text('View Map'),
             ),

@@ -14,13 +14,22 @@ import 'package:skid/screens/signup_screen.dart';
 //   runApp( MyApp());
 // }
 
-void main() async {
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await Firebase.initializeApp().catchError((error) {
+//     print('Error initializing Firebase: $error');
+//   });
+//   runApp(MyApp());
+// }
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp().catchError((error) {
     print('Error initializing Firebase: $error');
   });
   runApp(MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   @override
