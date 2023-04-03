@@ -30,13 +30,13 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SKID App',
       theme: ThemeData(
+        useMaterial3: true,
         primarySwatch: Colors.blue,
       ),
       routes: {
@@ -61,5 +61,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-
