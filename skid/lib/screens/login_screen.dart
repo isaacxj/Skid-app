@@ -28,22 +28,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (value) => _email = value.trim(),
-                validator: (value) => value!.isEmpty ? 'Email is required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Email is required' : null,
               ),
               SizedBox(height: 12),
               TextFormField(
                 decoration: InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 onChanged: (value) => _password = value,
-                validator: (value) => value!.isEmpty ? 'Password is required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Password is required' : null,
               ),
               SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    final user = await _authService.signInWithEmail(_email, _password);
+                    final user =
+                        await _authService.signInWithEmail(_email, _password);
+                    Navigator.pushReplacementNamed(context, '/home');
                     if (user == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to log in')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to log in')));
                     }
                   }
                 },
@@ -51,7 +56,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: 12),
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/signup'),
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, '/signup'),
                 child: Text('Create Account'),
               ),
             ],

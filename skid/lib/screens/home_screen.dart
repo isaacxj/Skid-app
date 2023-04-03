@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:skid/screens/map_view_screen.dart';
-
+import 'package:skid/services/authentication_service.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -11,7 +11,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   User? _user;
   String _userName = '';
-
+  final _authService = AuthenticationService();
   @override
   void initState() {
     super.initState();
@@ -49,10 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 // Implement navigation to the map screen
                 Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => MapViewScreen()),
-);
-
+                  context,
+                  MaterialPageRoute(builder: (context) => MapViewScreen()),
+                );
               },
               child: Text('View Map'),
             ),
@@ -62,6 +61,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Implement navigation to the past rides screen
               },
               child: Text('View Past Rides'),
+            ),
+            SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () async {
+                // Implement navigation to the past rides screen
+                await _authService.signOut();
+                Navigator.pushReplacementNamed(context, '/login');
+              },
+              child: Text('Logout'),
             ),
           ],
         ),

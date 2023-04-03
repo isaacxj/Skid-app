@@ -11,6 +11,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
+  String _name = '';
 
   @override
   Widget build(BuildContext context) {
@@ -25,26 +26,40 @@ class _SignupScreenState extends State<SignupScreen> {
               Image.asset('assets/logo.png', width: 150, height: 150),
               SizedBox(height: 24),
               TextFormField(
+                decoration: InputDecoration(labelText: 'Full Name'),
+                keyboardType: TextInputType.name,
+                onChanged: (value) => _name = value.trim(),
+                validator: (value) =>
+                    value!.isEmpty ? 'name is required' : null,
+              ),
+              SizedBox(height: 12),
+              TextFormField(
                 decoration: InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (value) => _email = value.trim(),
-                validator: (value) => value!.isEmpty ? 'Email is required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Email is required' : null,
               ),
               SizedBox(height: 12),
               TextFormField(
                 decoration: InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 onChanged: (value) => _password = value,
-                validator: (value) => value!.isEmpty ? 'Password is required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Password is required' : null,
               ),
               SizedBox(height: 24),
               ElevatedButton(
-                                onPressed: () async {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    final user = await _authService.signUpWithEmail(_email, _password);
+                    final user =
+                        await _authService.signUpWithEmail(_email, _password);
                     if (user == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to create account')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to create account')));
                     } else {
+                      await _authService.updateUserProfile(user, _name);
+                      await _authService.createUserCollection(user, _name);
                       Navigator.pushReplacementNamed(context, '/home');
                     }
                   }
@@ -53,7 +68,8 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               SizedBox(height: 12),
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, '/login'),
                 child: Text('Already have an account? Log in'),
               ),
             ],
@@ -63,4 +79,3 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 }
-
