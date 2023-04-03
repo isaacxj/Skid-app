@@ -77,5 +77,8 @@ class AuthenticationService {
       'email': user.email,
       'name': name
     });
+    await firestoreInstance.collection(user.uid).doc('Rides').set({
+      // Add any initial data you'd like to store for the user
+    });
   }
 }
