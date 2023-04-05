@@ -294,6 +294,7 @@
 
 //   return LatLngBounds(southwest: southwest, northeast: northeast);
 // }
+//DELETE
 
 
 
@@ -395,12 +396,15 @@
   
 // }
 
+
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'navigation_screen.dart';
 
 class MapViewScreen extends StatefulWidget {
   @override
@@ -409,6 +413,9 @@ class MapViewScreen extends StatefulWidget {
 
 class _MapViewScreenState extends State<MapViewScreen> {
   late GoogleMapController _googleMapController;
+  LatLng? _origin;
+  LatLng? _destination;
+  List<LatLng> _polylineCoordinates = [];
   LatLng _initialCameraPosition = LatLng(0, 0);
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
@@ -540,6 +547,32 @@ class _MapViewScreenState extends State<MapViewScreen> {
     });
   }
 
+  void _zoomToFit(LatLngBounds bounds) {
+    double screenPadding = 100;
+    _googleMapController.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, screenPadding),
+    );
+  }
+
+  void _startRide() {
+    if (_origin != null && _destination != null && _polylineCoordinates.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => NavigationScreen(
+            origin: _origin!,
+            destination: _destination!,
+            polylineCoordinates: _polylineCoordinates,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a destination first.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -549,7 +582,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
       body: Stack(
         children: [
           GoogleMap(
-            initialCameraPosition: CameraPosition(target: _initialCameraPosition, zoom: 15),
+            initialCameraPosition: CameraPosition(target: _origin ?? _initialCameraPosition, zoom: 15),
             onMapCreated: _onMapCreated,
             markers: _markers,
             polylines: _polylines,
@@ -571,7 +604,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  suffixIcon: IconButton(
+                                    suffixIcon: IconButton(
                     onPressed: _searchAndNavigate,
                     icon: Icon(Icons.search),
                   ),
@@ -579,9 +612,29 @@ class _MapViewScreenState extends State<MapViewScreen> {
               ),
             ),
           ),
+          if (_destination != null)
+            Positioned(
+              bottom: 20,
+              left: 15,
+              right: 15,
+              child: ElevatedButton(
+                onPressed: _startRide,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text('START RIDE', style: TextStyle(fontSize: 20)),
+                ),
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
+
 
