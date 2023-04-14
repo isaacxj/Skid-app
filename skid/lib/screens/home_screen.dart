@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:skid/screens/login_screen.dart';
 import 'package:skid/screens/map_view_screen.dart';
 import 'package:skid/services/authentication_service.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -13,14 +16,97 @@ class _HomeScreenState extends State<HomeScreen> {
   User? _user;
   String _userName = '';
   final _authService = AuthenticationService();
+  FlutterBluetoothSerial _bluetooth = FlutterBluetoothSerial.instance;
+  BluetoothDevice? _hc05Device;
+  bool _isConnected = false;
+  
   @override
-  void initState() {
-    super.initState();
-    _user = FirebaseAuth.instance.currentUser;
-    if (_user != null) {
-      _userName = _user!.displayName ?? '';
+void initState() {
+  super.initState();
+  _requestPermissions(); // Add this line
+  _user = FirebaseAuth.instance.currentUser;
+  if (_user != null) {
+    _userName = _user!.displayName ?? '';
+  }
+}
+
+
+Future<void> _requestPermissions() async {
+  if (await Permission.location.isDenied) {
+    await Permission.location.request();
+  }
+}
+  _findHC05Device() async {
+  List<BluetoothDevice> devices = await _bluetooth.getBondedDevices();
+  BluetoothDevice? foundDevice;
+  for (BluetoothDevice device in devices) {
+    if (device.name == 'HC-05') {
+      foundDevice = device;
+      break;
     }
   }
+  if (foundDevice != null) {
+    setState(() {
+      _hc05Device = foundDevice;
+    });
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('HC-05 Bluetooth Module Connected Succesfully!'),
+      ),
+    );
+  }
+}
+
+
+  _connectToDevice() async {
+    if (_hc05Device == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('HC-05 device not found. Please pair your device.'),
+        ),
+      );
+      return;
+    }
+    if (_isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connected!'),
+        ),
+      );
+      return;
+    }
+
+    await _bluetooth
+        .connect(_hc05Device!)
+        .timeout(Duration(seconds: 15), onTimeout: () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to connect. Timeout occurred.'),
+        ),
+      );
+      return;
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to connect. Error: $error'),
+        ),
+      );
+      return;
+    });
+
+    setState(() {
+      _isConnected = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Connected!'),
+      ),
+    );
+  }
+
+
 
   int _currentIndex = 0;
   final List<Widget> _pages = [
@@ -68,9 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                // Implement Bluetooth connection
-              },
+              onPressed: _connectToDevice,
               child: Text('Connect to Bike'),
             ),
             SizedBox(height: 12),
