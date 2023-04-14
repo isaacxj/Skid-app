@@ -40,6 +40,8 @@ class MapSampleState extends State<MapSample> {
   Set<Polyline> _polylines = Set<Polyline>();
   List<LatLng> polygonLatLngs = <LatLng>[];
   bool _isRideActive = false;
+  bool _rideStarted = false;
+
   double _currentDistance = 0.0;
   double _totalDistance = 0.0;
   double _calculateDistance(LatLng point1, LatLng point2) {
@@ -161,29 +163,28 @@ class MapSampleState extends State<MapSample> {
         LatLng point2 = LatLng(points[i + 1].latitude, points[i + 1].longitude);
         _totalDistance += _calculateDistance(point1, point2);
       }
-      // Remove the old route if it exists
-      if (_currentRoutePolylineId != null) {
-        setState(() {
+      _totalDistance = _totalDistance * 1000;
+      setState(() {
+        // Remove the old route if it exists
+        if (_currentRoutePolylineId != null) {
           _polylines.removeWhere((Polyline polyline) =>
               polyline.polylineId == _currentRoutePolylineId);
-        });
-      }
+        }
 
-      final String polylineIdVal = 'polyline_$_polylineIdCounter';
-      _polylineIdCounter++;
+        final String polylineIdVal = 'polyline_$_polylineIdCounter';
+        _polylineIdCounter++;
 
-      Polyline newRoute = Polyline(
-        polylineId: PolylineId(polylineIdVal),
-        width: 6,
-        color: Color.fromARGB(255, 255, 0, 0),
-        points: points
-            .map(
-              (point) => LatLng(point.latitude, point.longitude),
-            )
-            .toList(),
-      );
+        Polyline newRoute = Polyline(
+          polylineId: PolylineId(polylineIdVal),
+          width: 6,
+          color: Color.fromARGB(255, 255, 0, 0),
+          points: points
+              .map(
+                (point) => LatLng(point.latitude, point.longitude),
+              )
+              .toList(),
+        );
 
-      setState(() {
         _polylines.add(newRoute);
         _currentRoutePolylineId = newRoute.polylineId;
       });
@@ -317,8 +318,7 @@ class MapSampleState extends State<MapSample> {
                 SizedBox(width: 10),
                 FloatingActionButton.extended(
                   extendedPadding: const EdgeInsets.all(8.0),
-                  label:
-                      Text(_isRideActive ? 'Stop Ride' : 'Calculate Distance'),
+                  label: Text(_isRideActive ? 'Stop Ride' : 'Start Ride'),
                   icon: Icon(_isRideActive ? Icons.stop : Icons.route),
                   backgroundColor: Colors.deepPurple.shade900,
                   onPressed: () {
@@ -353,7 +353,6 @@ class MapSampleState extends State<MapSample> {
       _originController.text,
       _destinationController.text,
     );
-    // Add this line to debug the data
 
     _goToPlace(
       directions['start_location']['lat'],
@@ -364,7 +363,7 @@ class MapSampleState extends State<MapSample> {
     _updatePolyline();
     _isRideActive = true;
     _rideStopwatch.start();
-    _totalDistance = directions['legs'][0]['distance']['value'];
+
     setState(() {});
   }
 
@@ -397,7 +396,6 @@ class MapSampleState extends State<MapSample> {
       _rideStopwatch.reset();
       _markers.clear();
       _polylines.clear();
-      _originController.clear();
       _destinationController.clear();
       setState(() {});
     });
@@ -412,7 +410,10 @@ class MapSampleState extends State<MapSample> {
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(target: LatLng(lat, lng), zoom: 12),
+        CameraPosition(
+            target: LatLng(lat, lng),
+            zoom: 12,
+            tilt: _rideStarted ? 60 : 0), // Add tilt parameter here
       ),
     );
     controller.animateCamera(
