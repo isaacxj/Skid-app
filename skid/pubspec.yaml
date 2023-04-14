@@ -30,8 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+  flutter_google_places: ^0.3.0
   firebase_database: ^10.1.0
+  url_launcher: ^6.0.9
   google_maps_flutter: ^2.1.0
   geolocator: ^9.0.2
   #google_maps_webservice: ^0.0.19   #outdated, replacing with http
