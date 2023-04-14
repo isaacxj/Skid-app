@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:location/location.dart' as loc;
+import 'package:latlong2/latlong.dart' as latlng2;
 
 import 'LocationService.dart';
 
@@ -37,6 +39,28 @@ class MapSampleState extends State<MapSample> {
   Set<Polygon> _polygons = Set<Polygon>();
   Set<Polyline> _polylines = Set<Polyline>();
   List<LatLng> polygonLatLngs = <LatLng>[];
+  bool _isRideActive = false;
+  double _currentDistance = 0.0;
+  double _totalDistance = 0.0;
+  double _calculateDistance(LatLng point1, LatLng point2) {
+    const double earthRadius = 6371.0; // Radius of the Earth in kilometers
+
+    double lat1 = point1.latitude * pi / 180;
+    double lon1 = point1.longitude * pi / 180;
+    double lat2 = point2.latitude * pi / 180;
+    double lon2 = point2.longitude * pi / 180;
+
+    double dLat = lat2 - lat1;
+    double dLon = lon2 - lon1;
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  Stopwatch _rideStopwatch = Stopwatch();
 
   int _polygonIdCounter = 1;
   int _polylineIdCounter = 1;
@@ -61,6 +85,22 @@ class MapSampleState extends State<MapSample> {
         ),
       );
     });
+  }
+
+  int _findNearestPolylineIndex(
+      List<LatLng> polylinePoints, LatLng userLocation) {
+    int nearestIndex = 0;
+    double minDistance = double.infinity;
+
+    for (int i = 0; i < polylinePoints.length; i++) {
+      double distance = _calculateDistance(userLocation, polylinePoints[i]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIndex = i;
+      }
+    }
+
+    return nearestIndex;
   }
 
   void _setPolygon() {
@@ -114,7 +154,13 @@ class MapSampleState extends State<MapSample> {
         _originController.text,
         _destinationController.text,
       );
-
+      // Calculate the total distance
+      _totalDistance = 0;
+      for (int i = 0; i < points.length - 1; i++) {
+        LatLng point1 = LatLng(points[i].latitude, points[i].longitude);
+        LatLng point2 = LatLng(points[i + 1].latitude, points[i + 1].longitude);
+        _totalDistance += _calculateDistance(point1, point2);
+      }
       // Remove the old route if it exists
       if (_currentRoutePolylineId != null) {
         setState(() {
@@ -151,6 +197,34 @@ class MapSampleState extends State<MapSample> {
         _locationData = currentLocation;
         _originController.text =
             "\${currentLocation.latitude},\${currentLocation.longitude}";
+
+        if (_polylines.isNotEmpty && _currentRoutePolylineId != null) {
+          Polyline currentRoute = _polylines.firstWhere(
+              (Polyline polyline) =>
+                  polyline.polylineId == _currentRoutePolylineId,
+              orElse: () => Polyline(polylineId: PolylineId('invalid')));
+
+          if (currentRoute.polylineId != PolylineId('invalid')) {
+            int nearestIndex = _findNearestPolylineIndex(
+                currentRoute.points,
+                LatLng(currentLocation.latitude ?? 0.0,
+                    currentLocation.longitude ?? 0.0));
+            List<LatLng> newPolylinePoints =
+                currentRoute.points.sublist(nearestIndex);
+            setState(() {
+              _polylines.remove(currentRoute);
+              _polylines.add(
+                Polyline(
+                  polylineId: currentRoute.polylineId,
+                  width: currentRoute.width,
+                  color: currentRoute.color,
+                  points: newPolylinePoints,
+                ),
+              );
+            });
+          }
+        }
+
         _updatePolyline();
       });
     });
@@ -161,7 +235,7 @@ class MapSampleState extends State<MapSample> {
     return new Scaffold(
       appBar: AppBar(
         title: Text('Maps and Navigation '),
-        backgroundColor: Color.fromARGB(255, 255, 52, 2),
+        backgroundColor: Colors.deepPurple.shade900,
       ),
       backgroundColor: Colors.white,
       body: Column(
@@ -204,7 +278,7 @@ class MapSampleState extends State<MapSample> {
           ),
           Expanded(
             child: GoogleMap(
-              mapType: MapType.satellite,
+              mapType: MapType.normal,
               myLocationEnabled: true,
               markers: _markers,
               polygons: _polygons,
@@ -225,24 +299,37 @@ class MapSampleState extends State<MapSample> {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: FloatingActionButton.extended(
-              extendedPadding: const EdgeInsets.all(8.0),
-              label: const Text('Calculate Distance'),
-              icon: const Icon(Icons.route),
-              backgroundColor: Colors.deepPurple.shade900,
-              onPressed: () async {
-                var directions = await LocationService.getDirections(
-                  _originController.text,
-                  _destinationController.text,
-                );
-                _goToPlace(
-                  directions['start_location']['lat'],
-                  directions['start_location']['lng'],
-                  directions['bounds_ne'],
-                  directions['bounds_sw'],
-                );
-                _updatePolyline();
-              },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Column(
+                  children: [
+                    Text(
+                      'Total Distance: ${(_totalDistance / 1000).toStringAsFixed(2)} km',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    Text(
+                      'Ridden Distance: ${(_currentDistance / 1000).toStringAsFixed(2)} km',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ],
+                ),
+                SizedBox(width: 10),
+                FloatingActionButton.extended(
+                  extendedPadding: const EdgeInsets.all(8.0),
+                  label:
+                      Text(_isRideActive ? 'Stop Ride' : 'Calculate Distance'),
+                  icon: Icon(_isRideActive ? Icons.stop : Icons.route),
+                  backgroundColor: Colors.deepPurple.shade900,
+                  onPressed: () {
+                    if (_isRideActive) {
+                      _stopRide();
+                    } else {
+                      _startRide();
+                    }
+                  },
+                ),
+              ],
             ),
           ),
           Container(
@@ -259,6 +346,61 @@ class MapSampleState extends State<MapSample> {
         ],
       ),
     );
+  }
+
+  Future<void> _startRide() async {
+    var directions = await LocationService.getDirections(
+      _originController.text,
+      _destinationController.text,
+    );
+    // Add this line to debug the data
+
+    _goToPlace(
+      directions['start_location']['lat'],
+      directions['start_location']['lng'],
+      directions['bounds_ne'],
+      directions['bounds_sw'],
+    );
+    _updatePolyline();
+    _isRideActive = true;
+    _rideStopwatch.start();
+    _totalDistance = directions['legs'][0]['distance']['value'];
+    setState(() {});
+  }
+
+  void _stopRide() {
+    _isRideActive = false;
+    _rideStopwatch.stop();
+
+    int elapsedTimeInSeconds = _rideStopwatch.elapsed.inSeconds;
+    int minutes = (elapsedTimeInSeconds / 60).floor();
+    int seconds = elapsedTimeInSeconds % 60;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Ride Time'),
+          content: Text('Time taken for the bike ride: $minutes:$seconds'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+
+    Future.delayed(Duration(seconds: 1), () {
+      // Reset the map and other elements to their initial states
+      _rideStopwatch.reset();
+      _markers.clear();
+      _polylines.clear();
+      _originController.clear();
+      _destinationController.clear();
+      setState(() {});
+    });
   }
 
   Future<void> _goToPlace(
