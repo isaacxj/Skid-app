@@ -52,7 +52,7 @@ Future<void> _requestPermissions() async {
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('HC-05 device not found. Please pair your device.'),
+        content: Text('HC-05 Bluetooth Module Connected Succesfully!'),
       ),
     );
   }
